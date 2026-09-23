@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Pizza Ready!</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#8bdc55;font-family:Arial,sans-serif;overflow:hidden;touch-action:none;color:#35251d}#game{display:block;width:100vw;height:100vh;background:#9be35c}.hud{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;pointer-events:none}.card{background:#fff8e9;border:3px solid #5b3827;border-radius:14px;padding:8px 12px;font-weight:800;box-shadow:0 4px #5b3827}.actions{position:fixed;right:16px;bottom:20px;display:flex;flex-direction:column;gap:9px}.actions button{border:3px solid #5b3827;background:#ffca45;border-radius:14px;padding:12px 14px;font-weight:800;box-shadow:0 4px #5b3827}.actions button:active{transform:translateY(3px);box-shadow:0 1px #5b3827}.joy{position:fixed;left:22px;bottom:22px;width:126px;height:126px;border-radius:50%;background:#ffffff66;border:4px solid #fff;box-shadow:0 3px #5b3827;display:none}.stick{position:absolute;left:34px;top:34px;width:50px;height:50px;border-radius:50%;background:#e84d45;border:4px solid #5b3827}.tip{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#fff8e9;border-radius:10px;padding:7px 12px;font-weight:700}.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#5b3827;color:#fff;padding:9px 14px;border-radius:10px;opacity:0;transition:.2s}.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud"><div class="card">🍕 Pizza Ready!</div><div class="card">💰 <span id="coins">0</span></div><div class="card">🍅 <span id="tomatoes">0</span></div></div>
+<div class="tip">Collect tomatoes, then serve the customer!</div>
+<div class="joy" id="joy"><div class="stick" id="stick"></div></div>
+<div class="actions"><button id="serve">Serve Pizza</button><button id="hire">Hire Worker ($50)</button><button id="upgrade">Upgrade Shop ($100)</button></div>
+<div class="toast" id="toast"></div>
+<script>
+const c=document.getElementById('game'),x=c.getContext('2d');let W,H;function resize(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=innerWidth;H=innerHeight}addEventListener('resize',resize);resize();
+let player={x:W*.52,y:H*.62},coins=25,tomatoes=0,workers=0,level=1,customer={x:W*.72,y:H*.48,served:false};let keys={x:0,y:0};
+function toast(s){let t=document.getElementById('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400)}
+function ui(){coinsEl.textContent=coins;tomatoesEl.textContent=tomatoes}const coinsEl=document.getElementById('coins'),tomatoesEl=document.getElementById('tomatoes');
+function poly(points,fill,stroke='#5b3827'){x.beginPath();points.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.closePath();x.fillStyle=fill;x.fill();x.strokeStyle=stroke;x.lineWidth=2;x.stroke()}
+function draw(){x.clearRect(0,0,W,H);x.fillStyle='#9be35c';x.fillRect(0,0,W,H); // paths
+poly([[0,H*.55],[W*.42,H*.38],[W,H*.58],[W,H*.85],[W*.45,H*.62],[0,H*.78]],'#f4c18b');
+// farm
+poly([[20,90],[W*.36,38],[W*.44,240],[35,300]],'#6fbd43');for(let i=0;i<6;i++)for(let j=0;j<5;j++){let px=55+i*42+j*7,py=120+j*30; x.fillStyle='#e8423e';x.beginPath();x.arc(px,py,9,0,7);x.fill();x.fillStyle='#51a73c';x.fillRect(px-2,py-14,4,7)}
+// shop
+poly([[W*.42,H*.48],[W*.68,H*.39],[W*.82,H*.54],[W*.55,H*.65]],'#f7eee0');poly([[W*.47,H*.45],[W*.69,H*.38],[W*.73,H*.49],[W*.52,H*.57]],'#f05d4f');x.fillStyle='#fff';x.font='bold 22px Arial';x.fillText('PIZZA SHOP',W*.52,H*.51);
+// customer
+person(customer.x,customer.y,'#df5146');x.fillStyle='#5b3827';x.font='bold 14px Arial';x.fillText(customer.served?'Happy!':'Hungry!',customer.x-26,customer.y-38);
+// player
+person(player.x,player.y,'#2995d6');x.fillStyle='#5b3827';x.font='bold 13px Arial';x.fillText('YOU',player.x-14,player.y+31);
+requestAnimationFrame(draw)}
+function person(px,py,shirt){x.fillStyle='#f0a77c';x.beginPath();x.arc(px,py-18,10,0,7);x.fill();x.fillStyle=shirt;x.fillRect(px-10,py-8,20,24);x.strokeStyle='#35251d';x.strokeRect(px-10,py-8,20,24);x.fillStyle='#35251d';x.fillRect(px-8,py+16,6,14);x.fillRect(px+2,py+16,6,14)}
+function loop(){player.x+=keys.x*3;player.y+=keys.y*3;player.x=Math.max(20,Math.min(W-20,player.x));player.y=Math.max(70,Math.min(H-25,player.y));if(Math.hypot(player.x-150,player.y-180)<80&&tomatoes<10){tomatoes++;ui();toast('+1 tomato')}requestAnimationFrame(loop)}
+function move(e){let r=c.getBoundingClientRect(),px=(e.touches?e.touches[0].clientX:e.clientX)-r.left,py=(e.touches?e.touches[0].clientY:e.clientY)-r.top;keys.x=Math.max(-1,Math.min(1,(px-player.x)/80));keys.y=Math.max(-1,Math.min(1,(py-player.y)/80))}c.addEventListener('pointerdown',e=>{move(e);c.setPointerCapture(e.pointerId)});c.addEventListener('pointermove',e=>{if(e.buttons)move(e)});c.addEventListener('pointerup',()=>keys={x:0,y:0});
+document.getElementById('serve').onclick=()=>{if(tomatoes>=2&&!customer.served){tomatoes-=2;coins+=20;customer.served=true;ui();toast('Pizza served! +$20');setTimeout(()=>customer.served=false,1800)}else if(customer.served)toast('Next customer is coming!');else toast('Collect 2 tomatoes first')};document.getElementById('hire').onclick=()=>{if(coins>=50){coins-=50;workers++;ui();toast('Worker hired!')}else toast('Not enough coins')};document.getElementById('upgrade').onclick=()=>{if(coins>=100){coins-=100;level++;ui();toast('Shop upgraded to level '+level)}else toast('Not enough coins')};
+ui();draw();loop();
+</script></body></html>
